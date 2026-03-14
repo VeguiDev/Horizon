@@ -16,6 +16,8 @@ public enum MinecraftVersion {
      * <a href="https://minecraft.wiki/w/Tiny_Takeover">Tiny Takeover</a> drop
      * @apiNote This is the active upcoming drop for Minecraft
      */
+    V26_1_PR2("26.1-pre-2", "26.1 Pre-Release 2", 25, VersionType.PRE_RELEASE),
+    V26_1_PR1("26.1-pre-1", "26.1 Pre-Release 1", 25, VersionType.PRE_RELEASE),
     V26_1_SNAPSHOT_11("26.1-snapshot-11", "26.1 Snapshot 11", 25, VersionType.SNAPSHOT),
     V26_1_SNAPSHOT_10("26.1-snapshot-10", "26.1 Snapshot 10", 25, VersionType.SNAPSHOT),
     V26_1_SNAPSHOT_9("26.1-snapshot-9", "26.1 Snapshot 9", 25, VersionType.SNAPSHOT),
