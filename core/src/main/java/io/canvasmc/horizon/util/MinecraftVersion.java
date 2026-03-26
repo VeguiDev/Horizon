@@ -14,8 +14,8 @@ import org.jspecify.annotations.NonNull;
 public enum MinecraftVersion {
     /**
      * <a href="https://minecraft.wiki/w/Tiny_Takeover">Tiny Takeover</a> drop
-     * @apiNote This is the active upcoming drop for Minecraft
      */
+    V26_1("26.1", "26.1", 25, VersionType.STABLE),
     V26_1_RC3("26.1-rc-3", "26.1 Release Candidate 3", 25, VersionType.RELEASE_CANDIDATE),
     V26_1_RC2("26.1-rc-2", "26.1 Release Candidate 2", 25, VersionType.RELEASE_CANDIDATE),
     V26_1_RC1("26.1-rc-1", "26.1 Release Candidate 1", 25, VersionType.RELEASE_CANDIDATE),
