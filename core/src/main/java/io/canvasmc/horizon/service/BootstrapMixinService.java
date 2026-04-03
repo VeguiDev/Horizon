@@ -191,7 +191,7 @@ public class BootstrapMixinService implements IMixinService, IClassProvider, ICl
 
     @Override
     public MixinEnvironment.CompatibilityLevel getMaxCompatibilityLevel() {
-        return MixinEnvironment.CompatibilityLevel.JAVA_22;
+        return MixinEnvironment.CompatibilityLevel.JAVA_25;
     }
 
     @Override
