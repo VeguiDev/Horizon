@@ -13,7 +13,12 @@ import org.jspecify.annotations.NonNull;
  */
 public enum MinecraftVersion {
     /**
-     * Hotfix update for {@link io.canvasmc.horizon.util.MinecraftVersion#V26_1}
+     * Upcoming second hotfix update for {@link io.canvasmc.horizon.util.MinecraftVersion#V26_1}
+     */
+    V26_1_2_RC1("26.1.1-rc-1", "26.1.1 Release Candidate 2", 25, VersionType.RELEASE_CANDIDATE),
+
+    /**
+     * First hotfix update for {@link io.canvasmc.horizon.util.MinecraftVersion#V26_1}
      */
     V26_1_1("26.1.1", "26.1.1", 25, VersionType.STABLE),
     V26_1_1_RC1("26.1.1-rc-1", "26.1.1 Release Candidate 1", 25, VersionType.RELEASE_CANDIDATE),
