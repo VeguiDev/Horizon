@@ -44,7 +44,8 @@ Horizon tries not to break much; however, there are some things it's incompatibl
   and you will not receive support for using Spigot or Bukkit with Horizon
 - **Ignite and Eclipse.** Eclipse is a fork of Ignite, and Horizon derives some source from Eclipse since this project
   supersedes Eclipse. As such, they are both completely and fundamentally incompatible with Horizon. Horizon, in
-  comparison to Ignite, is generally more inclined and intended for expanding upon Ignite's initial structure and idea, aimed at
+  comparison
+  to Ignite, is generally more inclined and intended for expanding upon Ignite's initial structure and idea, aimed at
   specifically, plugin usage to match closer to things like Paper's patching style and such (transformers, for example).
   This also uses things like the plugin YAML and such, and is compatible with using the `main` entrypoint in plugins,
   unlike Ignite. Horizon is intended to expand plugin capabilities further for Paper, while Ignite is meant for a more
