@@ -1,6 +1,6 @@
 package io.canvasmc.horizon.extension
 
-import io.canvasmc.horizon.util.constants.CANVAS_MAVEN_RELEASES_REPO_URL
+import io.canvasmc.horizon.util.constants.CANVAS_MAVEN_PUBLIC_REPO_URL
 import io.canvasmc.horizon.util.constants.NEOFORGED_MAVEN_REPO_URL
 import io.canvasmc.horizon.util.jij.configureSplitSources
 import io.canvasmc.horizon.util.providerSet
@@ -33,7 +33,7 @@ abstract class HorizonExtension @Inject constructor(
     /**
      * The repository from which Horizon API should be resolved.
      */
-    val horizonApiRepo: Property<String> = objects.property<String>().convention(CANVAS_MAVEN_RELEASES_REPO_URL)
+    val horizonApiRepo: Property<String> = objects.property<String>().convention(CANVAS_MAVEN_PUBLIC_REPO_URL)
 
     /**
      * Whether to validate AT entries.
