@@ -35,8 +35,6 @@ import java.util.regex.Pattern;
  *     the authors
  * @param loadDatapackEntry
  *     if Horizon should load the plugin as a datapack too
- * @param bundle
- *     whether this plugin should be presented as a bundle root in Horizon UI
  * @param mixins
  *     the registered mixins
  * @param wideners
@@ -59,7 +57,6 @@ public record HorizonPluginMetadata(
     List<String> transformers,
     List<String> authors,
     boolean loadDatapackEntry,
-    boolean bundle,
     List<String> mixins,
     List<String> wideners,
     ObjectTree dependencies,
@@ -108,7 +105,6 @@ public record HorizonPluginMetadata(
             .orElse(new ArrayList<>());
 
         boolean loadDatapackEntry = root.getValueSafe("load_datapack_entry").asBooleanOptional().orElse(false);
-        boolean bundle = root.getValueSafe("bundle").asBooleanOptional().orElse(false);
         String description = root.getValueSafe("description").asStringOptional().orElse("");
 
         List<EntrypointObject> entrypoints = root.getArrayOptional("entrypoints")
@@ -126,7 +122,7 @@ public record HorizonPluginMetadata(
             id,
             List.copyOf(provides),
             name, description, version, entrypoints, transformers, authors,
-            loadDatapackEntry, bundle, mixins, wideners, root.getTreeOptional("dependencies").orElse(ObjectTree.builder().build()),
+            loadDatapackEntry, mixins, wideners, root.getTreeOptional("dependencies").orElse(ObjectTree.builder().build()),
             new NestedData(new HashSet<>(), new HashSet<>(), new HashSet<>())
         );
     };
