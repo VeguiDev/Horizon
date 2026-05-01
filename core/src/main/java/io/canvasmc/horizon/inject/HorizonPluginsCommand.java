@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.canvasmc.horizon.HorizonLoader;
 import io.canvasmc.horizon.plugin.types.HorizonPlugin;
+import io.canvasmc.horizon.util.FileJar;
 import io.canvasmc.horizon.util.tree.ObjectTree;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -15,9 +16,10 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.plugin.Plugin;
 import org.jspecify.annotations.NonNull;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -55,21 +57,16 @@ public class HorizonPluginsCommand {
         plugins.put(Type.HORIZON, new ArrayList<>());
         plugins.put(Type.PAPER, new ArrayList<>());
         plugins.put(Type.SPIGOT, new ArrayList<>());
-        for (final Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
-            Component pluginComponent = Component.text(plugin.getName()).color(plugin.isEnabled() ? NamedTextColor.GREEN : NamedTextColor.RED);
-            if (plugin.getPluginMeta() instanceof PaperPluginMeta) {
-                plugins.get(Type.PAPER).add(pluginComponent);
-            }
-            else plugins.get(Type.SPIGOT).add(pluginComponent);
-        }
 
         final Map<String, HorizonPlugin> providers = providersByIdentifier();
         final Set<String> bundledMembers = new LinkedHashSet<>();
+        final Set<Path> bundledServerPlugins = new LinkedHashSet<>();
         for (final HorizonPlugin plugin : HorizonLoader.getInstance().getPlugins().getAll()) {
-            if (plugin.pluginMetadata().bundle()) {
+            if (plugin.isBundle()) {
                 bundledMembers.addAll(collectBundleChildren(plugin, providers).stream()
                     .map(child -> child.pluginMetadata().id())
                     .toList());
+                bundledServerPlugins.addAll(collectBundleServerPluginPaths(plugin, providers));
             }
         }
 
@@ -78,6 +75,21 @@ public class HorizonPluginsCommand {
                 continue;
             }
             plugins.get(Type.HORIZON).add(bundleAwareName(plugin));
+        }
+
+        for (final Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+            final Optional<Path> pluginPath = loadedPluginPath(plugin);
+            if (pluginPath.isPresent() && bundledServerPlugins.contains(pluginPath.get())) {
+                continue;
+            }
+
+            final Component pluginComponent = pluginName(plugin);
+            if (plugin.getPluginMeta() instanceof PaperPluginMeta) {
+                plugins.get(Type.PAPER).add(pluginComponent);
+            }
+            else {
+                plugins.get(Type.SPIGOT).add(pluginComponent);
+            }
         }
 
         source.getSender().sendMessage((source.getSender() instanceof ConsoleCommandSender ? Component.newline() : Component.empty())
@@ -109,14 +121,19 @@ public class HorizonPluginsCommand {
         }
 
         final HorizonPlugin horizonPlugin = plugin.get();
-        if (!horizonPlugin.pluginMetadata().bundle()) {
+        if (!horizonPlugin.isBundle()) {
             source.getSender().sendMessage(Component.text(horizonPlugin.pluginMetadata().name() + " is not a bundle").color(NamedTextColor.YELLOW));
             return 0;
         }
 
         final List<Component> subplugins = new ArrayList<>();
-        for (final HorizonPlugin child : collectBundleChildren(horizonPlugin, providersByIdentifier())) {
+        final Map<String, HorizonPlugin> providers = providersByIdentifier();
+        for (final HorizonPlugin child : collectBundleChildren(horizonPlugin, providers)) {
             subplugins.add(bundleAwareName(child));
+        }
+        final Map<Path, Plugin> loadedPlugins = loadedPluginsByPath();
+        for (final Path child : collectBundleServerPluginPaths(horizonPlugin, providers)) {
+            subplugins.add(bundleAwareServerPluginName(child, loadedPlugins));
         }
 
         source.getSender().sendMessage((source.getSender() instanceof ConsoleCommandSender ? Component.newline() : Component.empty())
@@ -139,6 +156,7 @@ public class HorizonPluginsCommand {
     ) {
         final List<HorizonPlugin> collected = new ArrayList<>();
         final Set<String> visited = new LinkedHashSet<>();
+        visited.add(plugin.pluginMetadata().id());
         collectBundleChildren(plugin, providers, visited, collected);
         return collected;
     }
@@ -173,6 +191,49 @@ public class HorizonPluginsCommand {
         }
     }
 
+    private static @NonNull List<Path> collectBundleServerPluginPaths(
+        final @NonNull HorizonPlugin plugin,
+        final @NonNull Map<String, HorizonPlugin> providers
+    ) {
+        final List<Path> collected = new ArrayList<>();
+        final Set<String> visited = new LinkedHashSet<>();
+        visited.add(plugin.pluginMetadata().id());
+        collectBundleServerPluginPaths(plugin, providers, visited, collected);
+        return collected;
+    }
+
+    private static void collectBundleServerPluginPaths(
+        final @NonNull HorizonPlugin plugin,
+        final @NonNull Map<String, HorizonPlugin> providers,
+        final @NonNull Set<String> visited,
+        final @NonNull List<Path> collected
+    ) {
+        for (final FileJar serverPlugin : plugin.nestedData().serverPluginEntries()) {
+            collected.add(serverPlugin.ioFile().toPath().toAbsolutePath().normalize());
+        }
+
+        for (final HorizonPlugin child : plugin.nestedData().horizonEntries()) {
+            if (child.pluginMetadata().id().equals(plugin.pluginMetadata().id())) {
+                continue;
+            }
+            if (!visited.add(child.pluginMetadata().id())) {
+                continue;
+            }
+            collectBundleServerPluginPaths(child, providers, visited, collected);
+        }
+
+        for (final String dependencyId : pluginDependencyIds(plugin.pluginMetadata().dependencies())) {
+            final HorizonPlugin child = providers.get(dependencyId);
+            if (child == null || child.pluginMetadata().id().equals(plugin.pluginMetadata().id())) {
+                continue;
+            }
+            if (!visited.add(child.pluginMetadata().id())) {
+                continue;
+            }
+            collectBundleServerPluginPaths(child, providers, visited, collected);
+        }
+    }
+
     private static Optional<HorizonPlugin> findByIdentifier(final @NonNull String identifier) {
         final String normalized = identifier.toLowerCase();
         return Optional.ofNullable(providersByIdentifier().get(normalized));
@@ -180,10 +241,48 @@ public class HorizonPluginsCommand {
 
     private static Component bundleAwareName(final @NonNull HorizonPlugin plugin) {
         final Component base = Component.text(plugin.pluginMetadata().name()).color(NamedTextColor.GREEN);
-        if (!plugin.pluginMetadata().bundle()) {
+        if (!plugin.isBundle()) {
             return base;
         }
         return base.append(Component.text("*").color(NamedTextColor.GRAY));
+    }
+
+    private static Component bundleAwareServerPluginName(
+        final @NonNull Path serverPluginPath,
+        final @NonNull Map<Path, Plugin> loadedPlugins
+    ) {
+        final Plugin plugin = loadedPlugins.get(serverPluginPath);
+        if (plugin != null) {
+            return pluginName(plugin);
+        }
+
+        final String fileName = serverPluginPath.getFileName() == null ? serverPluginPath.toString() : serverPluginPath.getFileName().toString();
+        return Component.text(fileName.replace(".jar", "")).color(NamedTextColor.GRAY);
+    }
+
+    private static @NonNull Map<Path, Plugin> loadedPluginsByPath() {
+        final Map<Path, Plugin> plugins = new HashMap<>();
+        for (final Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+            loadedPluginPath(plugin).ifPresent(path -> plugins.put(path, plugin));
+        }
+        return plugins;
+    }
+
+    private static Optional<Path> loadedPluginPath(final @NonNull Plugin plugin) {
+        try {
+            if (plugin.getClass().getProtectionDomain() == null
+                || plugin.getClass().getProtectionDomain().getCodeSource() == null
+                || plugin.getClass().getProtectionDomain().getCodeSource().getLocation() == null) {
+                return Optional.empty();
+            }
+            return Optional.of(Path.of(plugin.getClass().getProtectionDomain().getCodeSource().getLocation().toURI()).toAbsolutePath().normalize());
+        } catch (final Exception ignored) {
+            return Optional.empty();
+        }
+    }
+
+    private static Component pluginName(final @NonNull Plugin plugin) {
+        return Component.text(plugin.getName()).color(plugin.isEnabled() ? NamedTextColor.GREEN : NamedTextColor.RED);
     }
 
     private static @NonNull Map<String, HorizonPlugin> providersByIdentifier() {
