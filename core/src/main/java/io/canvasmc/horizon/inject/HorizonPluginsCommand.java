@@ -41,17 +41,6 @@ public class HorizonPluginsCommand {
         return msg;
     }
 
-    public static LiteralCommandNode<CommandSourceStack> create() {
-        return Commands.literal("plugins")
-            .executes((context) -> executeOverview(context.getSource()))
-            .then(Commands.argument("plugin", StringArgumentType.word())
-                .executes((context) -> executeBundleLookup(
-                    context.getSource(),
-                    StringArgumentType.getString(context, "plugin")
-                )))
-            .build();
-    }
-
     private static int executeOverview(final @NonNull CommandSourceStack source) {
         Map<Type, List<Component>> plugins = new HashMap<>();
         plugins.put(Type.HORIZON, new ArrayList<>());
@@ -317,6 +306,17 @@ public class HorizonPluginsCommand {
             }
         }
         return msg;
+    }
+
+    public static LiteralCommandNode<CommandSourceStack> create() {
+        return Commands.literal("plugins")
+            .executes((context) -> executeOverview(context.getSource()))
+            .then(Commands.argument("plugin", StringArgumentType.word())
+                .executes((context) -> executeBundleLookup(
+                    context.getSource(),
+                    StringArgumentType.getString(context, "plugin")
+                )))
+            .build();
     }
 
     private enum Type {

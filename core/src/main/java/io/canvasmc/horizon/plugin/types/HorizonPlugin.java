@@ -79,7 +79,7 @@ public final class HorizonPlugin {
      */
     public boolean isBundle() {
         return !nestedData.horizonEntries().isEmpty()
-                || !nestedData.serverPluginEntries().isEmpty();
+            || !nestedData.serverPluginEntries().isEmpty();
     }
 
     /**

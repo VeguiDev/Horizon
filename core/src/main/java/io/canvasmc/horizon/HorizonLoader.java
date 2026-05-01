@@ -206,6 +206,13 @@ public class HorizonLoader {
         new HorizonLoader(properties, version, javaInstrumentation, initialClasspath, args);
     }
 
+    public static @NonNull HorizonPlugin getInternalPlugin() {
+        if (INTERNAL_PLUGIN == null) {
+            throw new IllegalStateException("Internal Horizon plugin has not been initialized yet");
+        }
+        return INTERNAL_PLUGIN;
+    }
+
     /**
      * Starts the Horizon server
      *
@@ -382,12 +389,5 @@ public class HorizonLoader {
     public PluginTree getPlugins() {
         if (this.plugins == null) throw new IllegalStateException("Server hasn't loaded plugins yet");
         return this.plugins;
-    }
-
-    public static @NonNull HorizonPlugin getInternalPlugin() {
-        if (INTERNAL_PLUGIN == null) {
-            throw new IllegalStateException("Internal Horizon plugin has not been initialized yet");
-        }
-        return INTERNAL_PLUGIN;
     }
 }

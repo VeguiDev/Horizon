@@ -10,8 +10,8 @@ import org.jetbrains.annotations.Unmodifiable;
 import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -141,18 +141,6 @@ public record HorizonPluginMetadata(
         );
     };
 
-    /**
-     * Returns all identifiers associated with this plugin.
-     * The first identifier is the core plugin id,
-     * followed by any provided identifiers.
-     */
-    public @NonNull @Unmodifiable Set<String> identifiers() {
-        final LinkedHashSet<String> ids = new LinkedHashSet<>();
-        ids.add(this.id);
-        ids.addAll(this.provides);
-        return Set.copyOf(ids);
-    }
-
     @Contract("_, _ -> param1")
     private static @NonNull String validateIdentifier(final @NonNull String identifier, final String fieldName) {
         final String normalized = identifier.toLowerCase(Locale.ROOT);
@@ -177,6 +165,17 @@ public record HorizonPluginMetadata(
         }
 
         return normalized;
+    }
+
+    /**
+     * Returns all identifiers associated with this plugin. The first identifier is the core plugin id, followed by any
+     * provided identifiers.
+     */
+    public @NonNull @Unmodifiable Set<String> identifiers() {
+        final LinkedHashSet<String> ids = new LinkedHashSet<>();
+        ids.add(this.id);
+        ids.addAll(this.provides);
+        return Set.copyOf(ids);
     }
 
     /**

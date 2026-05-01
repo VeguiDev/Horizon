@@ -15,7 +15,6 @@ import org.jspecify.annotations.NonNull;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -193,49 +192,9 @@ public class ResolutionPhase implements Phase<Set<Pair<FileJar, HorizonPluginMet
         };
     }
 
-    @Override
-    public Set<Pair<FileJar, HorizonPluginMetadata>> execute(final @NonNull Set<Pair<FileJar, HorizonPluginMetadata>> input, final LoadContext context) throws PhaseException {
-        final Map<String, Pair<FileJar, HorizonPluginMetadata>> remaining = new LinkedHashMap<>();
-        final MinecraftVersion currentVersion = HorizonLoader.getInstance().getVersionMeta().minecraftVersion();
-        final int ASM_VER = MixinTransformationImpl.ASM_VERSION;
-        final HorizonPluginMetadata internalPlugin = HorizonLoader.getInternalPlugin().pluginMetadata();
-
-        for (final Pair<FileJar, HorizonPluginMetadata> pair : input) {
-            final HorizonPluginMetadata pluginMetadata = pair.b();
-            remaining.put(pluginMetadata.id(), pair);
-        }
-
-        ensureUniqueIdentifiers(remaining.values(), internalPlugin);
-
-        boolean changed;
-        do {
-            changed = false;
-            final Map<String, HorizonPluginMetadata> providersByIdentifier = providersByIdentifier(remaining.values(), internalPlugin);
-
-            final List<String> toRemove = new ArrayList<>();
-            for (final Map.Entry<String, Pair<FileJar, HorizonPluginMetadata>> entry : remaining.entrySet()) {
-                final HorizonPluginMetadata pluginMetadata = entry.getValue().b();
-                if (!matchesRuntimeRequirements(pluginMetadata, currentVersion, ASM_VER)) {
-                    toRemove.add(entry.getKey());
-                    continue;
-                }
-                if (!matchesPluginRequirements(pluginMetadata, providersByIdentifier)) {
-                    toRemove.add(entry.getKey());
-                }
-            }
-
-            if (!toRemove.isEmpty()) {
-                changed = true;
-                toRemove.forEach(remaining::remove);
-            }
-        } while (changed);
-
-        return new LinkedHashSet<>(orderByDependencies(remaining.values(), internalPlugin));
-    }
-
     private static void ensureUniqueIdentifiers(
         final Iterable<Pair<FileJar, HorizonPluginMetadata>> plugins,
-        final HorizonPluginMetadata internalPlugin
+        final @NonNull HorizonPluginMetadata internalPlugin
     ) throws PhaseException {
         final Map<String, HorizonPluginMetadata> pluginsByIdentifier = new HashMap<>();
         for (final String identifier : internalPlugin.identifiers()) {
@@ -257,8 +216,8 @@ public class ResolutionPhase implements Phase<Set<Pair<FileJar, HorizonPluginMet
     }
 
     private static @NonNull Map<String, HorizonPluginMetadata> providersByIdentifier(
-        final Iterable<Pair<FileJar, HorizonPluginMetadata>> plugins,
-        final HorizonPluginMetadata internalPlugin
+        final @NonNull Iterable<Pair<FileJar, HorizonPluginMetadata>> plugins,
+        final @NonNull HorizonPluginMetadata internalPlugin
     ) {
         final Map<String, HorizonPluginMetadata> providers = new HashMap<>();
         internalPlugin.identifiers().forEach(identifier -> providers.put(identifier, internalPlugin));
@@ -270,7 +229,7 @@ public class ResolutionPhase implements Phase<Set<Pair<FileJar, HorizonPluginMet
     }
 
     private static boolean matchesRuntimeRequirements(
-        final HorizonPluginMetadata pluginMetadata,
+        final @NonNull HorizonPluginMetadata pluginMetadata,
         final MinecraftVersion currentVersion,
         final int asmVersion
     ) {
@@ -316,7 +275,7 @@ public class ResolutionPhase implements Phase<Set<Pair<FileJar, HorizonPluginMet
     }
 
     private static boolean matchesPluginRequirements(
-        final HorizonPluginMetadata pluginMetadata,
+        final @NonNull HorizonPluginMetadata pluginMetadata,
         final Map<String, HorizonPluginMetadata> providersByIdentifier
     ) {
         for (final Map.Entry<String, String> dependency : pluginDependencyConstraints(pluginMetadata.dependencies()).entrySet()) {
@@ -353,7 +312,7 @@ public class ResolutionPhase implements Phase<Set<Pair<FileJar, HorizonPluginMet
         return true;
     }
 
-    private static @NonNull Map<String, String> pluginDependencyConstraints(final ObjectTree dependencies) {
+    private static @NonNull Map<String, String> pluginDependencyConstraints(final @NonNull ObjectTree dependencies) {
         final Map<String, String> pluginDependencies = new LinkedHashMap<>();
         for (final String key : dependencies.keys()) {
             if (RESERVED_DEPENDENCY_KEYS.contains(key)) {
@@ -433,6 +392,46 @@ public class ResolutionPhase implements Phase<Set<Pair<FileJar, HorizonPluginMet
         }
 
         return ordered;
+    }
+
+    @Override
+    public Set<Pair<FileJar, HorizonPluginMetadata>> execute(final @NonNull Set<Pair<FileJar, HorizonPluginMetadata>> input, final LoadContext context) throws PhaseException {
+        final Map<String, Pair<FileJar, HorizonPluginMetadata>> remaining = new LinkedHashMap<>();
+        final MinecraftVersion currentVersion = HorizonLoader.getInstance().getVersionMeta().minecraftVersion();
+        final int ASM_VER = MixinTransformationImpl.ASM_VERSION;
+        final HorizonPluginMetadata internalPlugin = HorizonLoader.getInternalPlugin().pluginMetadata();
+
+        for (final Pair<FileJar, HorizonPluginMetadata> pair : input) {
+            final HorizonPluginMetadata pluginMetadata = pair.b();
+            remaining.put(pluginMetadata.id(), pair);
+        }
+
+        ensureUniqueIdentifiers(remaining.values(), internalPlugin);
+
+        boolean changed;
+        do {
+            changed = false;
+            final Map<String, HorizonPluginMetadata> providersByIdentifier = providersByIdentifier(remaining.values(), internalPlugin);
+
+            final List<String> toRemove = new ArrayList<>();
+            for (final Map.Entry<String, Pair<FileJar, HorizonPluginMetadata>> entry : remaining.entrySet()) {
+                final HorizonPluginMetadata pluginMetadata = entry.getValue().b();
+                if (!matchesRuntimeRequirements(pluginMetadata, currentVersion, ASM_VER)) {
+                    toRemove.add(entry.getKey());
+                    continue;
+                }
+                if (!matchesPluginRequirements(pluginMetadata, providersByIdentifier)) {
+                    toRemove.add(entry.getKey());
+                }
+            }
+
+            if (!toRemove.isEmpty()) {
+                changed = true;
+                toRemove.forEach(remaining::remove);
+            }
+        } while (changed);
+
+        return new LinkedHashSet<>(orderByDependencies(remaining.values(), internalPlugin));
     }
 
     @Override
